@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет для телефона и компьютера</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .income-container, .category-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+        .income-block, .category-block {
+            border: 1px solid #4CAF50;
+            border-radius: 12px;
+            padding: 15px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .income-block:hover, .category-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .income-block input,
+        .income-block textarea,
+        .category-block select,
+        .category-block input,
+        .category-block textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .income-block textarea,
+        .category-block textarea {
+            resize: vertical;
+            height: 60px;
+        }
+        .add-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        .add-button:hover {
+            background-color: #45a049;
+        }
+        .comparison-table {
+            margin-top: 30px;
+            width: 100%;
+            border-collapse: collapse;
+            overflow-x: auto;
+            display: block;
+        }
+        .comparison-table th {
+            background-color: #333;
+            color: white;
+        }
+        .comparison-table td {
+            font-weight: bold;
+        }
+
+        /* Адаптация для телефонов */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+            .income-block, .category-block {
+                padding: 10px;
+            }
+            .income-block input,
+            .income-block textarea,
+            .category-block select,
+            .category-block input,
+            .category-block textarea {
+                font-size: 12px;
+                padding: 6px;
+            }
+            .add-button {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Учет расходов и доходов 🏠</h1>
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th>Месяц</th>
+                <th>Доходы</th>
+                <th>Расходы</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Строки добавляются автоматически -->
+        </tbody>
+    </table>
+
+    <h2>Итоги за месяц</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Месяц</th>
+                <th>Расходы</th>
+                <th>Доходы</th>
+                <th>Остаток</th>
+                <th>Сравнение</th>
+            </tr>
+        </thead>
+        <tbody id="summaryBody">
+            <!-- Данные обновляются автоматически -->
+        </tbody>
+    </table>
+
+    <script>
+        const months = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+                       "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+        
+        // Категории расходов
+        const categories = [
+            "Продукты",
+            "Транспорт",
+            "Коммуналка",
+            "Развлечения",
+            "Здоровье",
+            "Образование",
+            "Одежда",
+            "Путешествия",
+            "Подарки",
+            "Дом"
+        ];
+
+        let data = {};
+
+        // Создаем таблицу месяцев
+        function initTable() {
+            const tbody = document.querySelector("#mainTable tbody");
+            months.forEach(month => {
+                const row = document.createElement("tr");
+                
+                // Ячейка месяца
+                const monthCell = document.createElement("td");
+                monthCell.textContent = month;
+                row.appendChild(monthCell);
+
+                // Контейнер для доходов
+                const incomeCell = document.createElement("td");
+                const incomeContainer = document.createElement("div");
+                incomeContainer.className = "income-container";
+                incomeCell.appendChild(incomeContainer);
+                row.appendChild(incomeCell);
+
+                // Контейнер для расходов
+                const categoryCell = document.createElement("td");
+                const categoryContainer = document.createElement("div");
+                categoryContainer.className = "category-container";
+                categoryCell.appendChild(categoryContainer);
+                row.appendChild(categoryCell);
+
+                // Кнопка добавления дохода
+                const actionCell = document.createElement("td");
+                const addIncomeButton = document.createElement("button");
+                addIncomeButton.className = "add-button";
+                addIncomeButton.textContent = "+ Доход";
+                addIncomeButton.onclick = () => addIncome(month, incomeContainer);
+                actionCell.appendChild(addIncomeButton);
+
+                // Кнопка добавления расхода
+                const addExpenseButton = document.createElement("button");
+                addExpenseButton.className = "add-button";
+                addExpenseButton.textContent = "+ Расход";
+                addExpenseButton.onclick = () => addCategory(month, categoryContainer);
+                actionCell.appendChild(addExpenseButton);
+
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+                data[month] = {
+                    incomes: [],
+                    expenses: []
+                };
+            });
+        }
+
+        // Добавляем доход
+        function addIncome(month, container) {
+            const block = document.createElement("div");
+            block.className = "income-block";
+
+            // Поле для суммы дохода
+            const amountInput = document.createElement("input");
+            amountInput.type = "number";
+            amountInput.placeholder = "Сумма";
+            amountInput.addEventListener("input", updateSummary);
+
+            // Поле для даты дохода
+            const dateInput = document.createElement("input");
+            dateInput.type = "date";
+            dateInput.placeholder = "Дата";
+
+            // Поле для описания дохода
+            const descriptionInput = document.createElement("textarea");
+            descriptionInput.placeholder = "Описание (например, Зарплата)";
+
+            block.appendChild(amountInput);
+            block.appendChild(dateInput);
+            block.appendChild(descriptionInput);
+            container.appendChild(block);
+
+            // Сохраняем данные
+            data[month].incomes.push({
+                amount: amountInput,
+                date: dateInput,
+                description: descriptionInput
+            });
+
+            updateSummary();
+        }
+
+        // Добавляем категорию расходов
+        function addCategory(month, container) {
+            const block = document.createElement("div");
+            block.className = "category-block";
+
+            // Выбор категории
+            const select = document.createElement("select");
+            categories.forEach(cat => {
+                const option = document.createElement("option");
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+            block.appendChild(select);
+
+            // Поле для даты расхода
+            const dateInput = document.createElement("input");
+            dateInput.type = "date";
+            dateInput.placeholder = "Дата";
+            block.appendChild(dateInput);
+
+            // Поле для суммы расхода
+            const amountInput = document.createElement("input");
+            amountInput.type = "number";
+            amountInput.placeholder = "Сумма";
+            amountInput.addEventListener("input", updateSummary);
+            block.appendChild(amountInput);
+
+            // Поле для описания расхода
+            const descriptionInput = document.createElement("textarea");
+            descriptionInput.placeholder = "Описание (например, Кино — 600 рублей)";
+            block.appendChild(descriptionInput);
+
+            container.appendChild(block);
+
+            // Сохраняем данные
+            data[month].expenses.push({
+                category: select,
+                date: dateInput,
+                amount: amountInput,
+                description: descriptionInput
+            });
+
+            updateSummary();
+        }
+
+        // Обновляем итоги
+        function updateSummary() {
+            const summaryBody = document.querySelector("#summaryBody");
+            summaryBody.innerHTML = "";
+
+            let prevExpenses = 0;
+            let prevIncome = 0;
+
+            months.forEach(month => {
+                const incomes = data[month].incomes.reduce((sum, item) => sum + (+item.amount.value || 0), 0);
+                const expenses = data[month].expenses.reduce((sum, item) => sum + (+item.amount.value || 0), 0);
+                const balance = incomes - expenses;
+                const diff = expenses - prevExpenses;
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${month}</td>
+                    <td>${expenses}</td>
+                    <td>${incomes}</td>
+                    <td style="color: ${balance >= 0 ? 'green' : 'red'}">${balance}</td>
+                    <td style="color: ${diff <= 0 ? 'green' : 'red'}">${diff}</td>
+                `;
+                summaryBody.appendChild(row);
+
+                prevExpenses = expenses;
+                prevIncome = incomes;
+            });
+        }
+
+        // Запускаем при загрузке
+        window.onload = initTable;
+    </script>
+</body>
+</html>
